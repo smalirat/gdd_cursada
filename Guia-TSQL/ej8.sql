@@ -12,34 +12,20 @@ CREATE TABLE Diferencias
 	dif_precio_facturado decimal(12,2) NULL
 )
 
-CREATE PROCEDURE EJ8
-
-AS	
-	BEGIN
-	
-	DECLARE @codigo char(8) ,@detalle char(50),@cantidad int,@precio_generado decimal(12,2) ,@precio_facturado decimal(12,2) 
-
-
-	DECLARE cursor_diferencia CURSOR
-		FOR SELECT 
-
-			OPEN cursor_diferencia
-			FETCH NEXT FROM cursor_diferencia
-				INTO @codigo,@detalle,@cantidad,@precio_generado,@precio_facturado
-
-			WHILE(@@FETCH_STATUS = 0)
-				BEGIN
-					INSERT INTO Diferencias
-						VALUES(@codigo,@detalle,@cantidad,@precio_generado,@precio_facturado)
-					FETCH NEXT FROM cursor_diferencia
-						INTO @codigo,@detalle,@cantidad,@precio_generado,@precio_facturado
-				END
-			CLOSE cursor_diferencia
-			DEALLOCATE cursor_diferencia
-				
-	 END
-GO
-
+create procedure ej_t8 
+AS
+begin
+    insert diferencias 
+    select  distinct p1.prod_codigo, prod_Detalle,(select count(*) from composicion where comp_producto = p1.prod_codigo),
+            (select sum(comp_cantidad*p2.prod_precio) from composicion join producto p2 on comp_componente = p2.prod_codigo
+                where comp_producto = p1.prod_codigo) ,item_precio 
+    from Item_Factura join producto p1 on p1.prod_codigo = item_producto
+    where p1.prod_codigo in (select comp_producto from Composicion) 
+    and item_precio <> (select sum(comp_cantidad*p2.prod_precio) from composicion join producto p2 on comp_componente = p2.prod_codigo
+                where comp_producto = p1.prod_codigo)
+    return
+end    
+go 
 
 
 EXEC DBO.EJ8
